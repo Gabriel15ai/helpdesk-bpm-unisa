@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help Desk BPM | Gestão de Chamados</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="top">
+  <div><div class="eyebrow">PROJETO INTEGRADOR • BPM</div><h1>Help Desk <span>BPM</span></h1>
+  <p>Central de atendimento e acompanhamento de solicitações</p></div>
+  <div class="tag">Protótipo funcional</div>
+</header>
+<main>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for tipo, msg in messages %}<div class="alert {{ tipo }}">{{ msg }}</div>{% endfor %}{% endif %}
+{% endwith %}
+<section class="stats">
+  <article><small>Total de chamados</small><strong>{{ totais.total }}</strong></article>
+  <article><small>Abertos</small><strong>{{ totais.abertos }}</strong></article>
+  <article><small>Em andamento</small><strong>{{ totais.andamento }}</strong></article>
+  <article><small>Concluídos</small><strong>{{ totais.concluidos }}</strong></article>
+</section>
+<div class="layout">
+<section class="panel">
+  <div class="section-head"><div><div class="eyebrow">NOVA SOLICITAÇÃO</div><h2>Abrir chamado</h2></div><span class="bubble">01</span></div>
+  <form action="{{ url_for('novo') }}" method="post" class="form">
+    <label>Nome do solicitante<input name="solicitante" required placeholder="Ex.: Gabriel Costa"></label>
+    <label>Setor<input name="setor" required placeholder="Ex.: Recursos Humanos"></label>
+    <label>Categoria
+      <select name="categoria" required>
+        <option value="">Selecione uma categoria</option>
+        <option>Hardware</option><option>Software</option><option>Acesso e senha</option>
+        <option>Administrativo</option><option>Financeiro</option><option>Outros</option>
+      </select>
+    </label>
+    <label>Prioridade<select name="prioridade"><option>Baixa</option><option selected>Média</option><option>Alta</option><option>Urgente</option></select></label>
+    <label class="full">Descrição do problema<textarea name="descricao" rows="4" required placeholder="Descreva a solicitação com detalhes..."></textarea></label>
+    <button class="primary full" type="submit">+ Registrar chamado</button>
+  </form>
+  <p class="hint">A categoria direciona automaticamente o chamado para uma fila responsável.</p>
+</section>
+<section class="panel tickets">
+  <div class="section-head"><div><div class="eyebrow">CONTROLE OPERACIONAL</div><h2>Chamados registrados</h2></div><span class="bubble">02</span></div>
+  <form method="get" class="filters">
+    <input name="q" value="{{ busca }}" placeholder="Buscar por número, nome ou descrição">
+    <select name="status"><option value="">Todos os status</option>
+      {% for s in ['Aberto','Em andamento','Concluído'] %}<option value="{{ s }}" {% if filtro==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select><button class="secondary">Filtrar</button>
+  </form>
+  {% if chamados %}
+  <div class="table-wrap"><table><thead><tr><th>Chamado</th><th>Solicitante / Categoria</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Atualizar</th></tr></thead><tbody>
+  {% for c in chamados %}
+  <tr>
+    <td><b>#{{ c.id }}</b><small>{{ c.criado_em }}</small></td>
+    <td><b>{{ c.solicitante }}</b><small>{{ c.categoria }} • {{ c.setor }}</small><small>{{ c.descricao }}</small>
+      {% if c.solucao %}<small class="solution">Solução: {{ c.solucao }}</small>{% endif %}</td>
+    <td><span class="priority {{ c.prioridade|lower }}">{{ c.prioridade }}</span></td>
+    <td><span class="status {{ 'done' if c.status=='Concluído' else ('doing' if c.status=='Em andamento' else 'open') }}">{{ c.status }}</span></td>
+    <td>{{ c.responsavel }}</td>
+    <td><details><summary>Gerenciar</summary>
+      <form action="{{ url_for('atualizar', chamado_id=c.id) }}" method="post" class="manage">
+        <label>Status<select name="status">{% for s in ['Aberto','Em andamento','Concluído'] %}<option {% if c.status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+        <label>Solução / observação<textarea name="solucao" rows="2" placeholder="Obrigatória para concluir">{{ c.solucao }}</textarea></label>
+        <button class="primary">Salvar atualização</button>
+      </form>
+      <form action="{{ url_for('excluir', chamado_id=c.id) }}" method="post" onsubmit="return confirm('Excluir este chamado?')"><button class="delete">Excluir chamado</button></form>
+    </details></td>
+  </tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty"><div>✓</div><b>Nenhum chamado encontrado</b><p>Registre uma solicitação ou altere os filtros.</p></div>{% endif %}
+</section>
+</div>
+<section class="bpm-note"><b>Fluxo TO-BE aplicado:</b> abertura em formulário único → classificação por categoria → encaminhamento para responsável → execução e atualização do status → registro da solução e encerramento.</section>
+<footer>Protótipo acadêmico para demonstração de conceitos de BPM • Dados armazenados em banco SQLite.</footer>
+</main>
+</body></html>
